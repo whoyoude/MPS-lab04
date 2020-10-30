@@ -12,17 +12,16 @@
 ADC_HandleTypeDef hADC3;
 DAC_HandleTypeDef hDAC1;
 uint32_t voltage=0;
-//uint32_t x=0;
+//uint32_t x=0;   //uint32_t with name of x, x_1, x_2 and putout are for C language implement
 //uint32_t x_1 =0;
 //uint32_t  x_2=0;
 //uint32_t putout=0;
-//uint32_t putout_1=0;
-float x=0;
+float x=0;//float with name of x, x_1, x_2, putout and putout_1 are for assembly language implement
 float x_1 =0;
 float x_2=0;
 float putout=0;
 float putout_1=0;
-float a = 0.3125;
+float a = 0.3125;// Coefficient for assembly language implement
 float b = 0.240385;
 float c = 0.296875;
 
@@ -48,7 +47,7 @@ int main(void)
 //		HAL_DAC_SetValue(&hDAC1, DAC_CHANNEL_1,DAC_ALIGN_12B_R, putout);
 
 		//Use assembly language
-		asm ("VMOV.F32 %0,%1":"+t"(x_2):"t"(x_1));
+		asm ("VMOV.F32 %0,%1":"+t"(x_2):"t"(x_1));//Shifting the input value by 1 time unit
 		asm ("VMOV.F32 %0,%1":"+t"(x_1):"t"(x));
 		asm ("VMOV.F32 %0,%1":"+t"(putout_1):"t"(putout));
 		x = readvoltage();
@@ -67,10 +66,12 @@ int main(void)
 
 void configureDAC(){
 	__HAL_RCC_DAC_CLK_ENABLE();
-
+	
+	//Configure DAC_HandleTypeDef
 	hDAC1.Instance = DAC;
 	HAL_DAC_Init(&hDAC1);
-
+	
+	//Configure DAC_ChannelConfTypeDef
 	DAC_ChannelConfTypeDef dacchan;
 	dacchan.DAC_Trigger = DAC_TRIGGER_NONE;
 	dacchan.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
@@ -95,7 +96,7 @@ void HAL_DAC_MspInit(DAC_HandleTypeDef *hdac)
 
 uint16_t readvoltage(){
 	HAL_ADC_Start(&hADC3);
-	HAL_ADC_PollForConversion(&hADC3,100);
+	HAL_ADC_PollForConversion(&hADC3,100);//wait for ADC conversion complete
 	return HAL_ADC_GetValue(&hADC3);
 }
 
@@ -104,7 +105,8 @@ uint16_t readvoltage(){
 void configureADC()
 {  //A3 =>PF10 (ADC3_IN8)
 	__HAL_RCC_ADC3_CLK_ENABLE();
-
+        
+	//Configure ADC_HandleTypeDef
 	hADC3.Instance = ADC3;
 	hADC3.Init.Resolution = ADC_RESOLUTION_12B;
 	hADC3.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
@@ -118,7 +120,7 @@ void configureADC()
 	hADC3.Init.ExternalTrigConv = ADC_SOFTWARE_START;
 	HAL_ADC_Init(&hADC3);
 
-	//ADC->CCR |= ADC_CCR_TSVREFE;
+	//Configure ADC_ChannelConfTypeDef
 	ADC_ChannelConfTypeDef adcchan;
 	adcchan.Channel = ADC_CHANNEL_8;
 	adcchan.Rank = ADC_REGULAR_RANK_1;
