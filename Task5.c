@@ -26,26 +26,26 @@ void configureDAC();
 void configureADC();
 void Init_timer_HAL();
 
-float rtof(uint16_t raw){
+float rtof(uint16_t raw){ //Convert the analog signal to voltage (unit: V)
 	return 3.3*raw/4095;
 }
 
-uint16_t ftor(float f){
+uint16_t ftor(float f){ //Convert the voltage(unit: V) to an analog signal
 	uint16_t x =f/3.3*4096;
 	return x;
 
 }
 
 void update(){
-	if(adc_state==3){
+	if(adc_state==3){//Conversion of both ADC1 and ADC3 are completed
 		adc_state=0;
 
-				//execute
+		//execute the output caculation
 		x_4 = x_3;
 		x_3 = x_2;
 		x_2 = x_1;
 		x_1 = x;
-		x = (rtof(v_adc1)-1)*(rtof(v_adc3)-1);
+		x = (rtof(v_adc1)-1)*(rtof(v_adc3)-1);//Delete the DC bias of input signals
 
 		y_4 = y_3;
 		y_3 = y_2;
@@ -53,10 +53,8 @@ void update(){
 		y_1 = y;
 		y = 0.001*x-0.002*x_2+0.001*x_4 +3.166*y_1-4.418*y_2+3.028*y_3-0.915*y_4;
 
-		//y = 0.312500*x + 0.240385*x_1 + 0.312500*x_2 + 0.296875*y_1;
-		uint16_t c=ftor(y+1);
+		uint16_t c=ftor(y+1);//Convert the value back to analog signal
 		HAL_DAC_SetValue(&hDAC1, DAC_CHANNEL_1,DAC_ALIGN_12B_R, c);
-		//printf("x=%f, y=%f\n\r",x,y);
 	}
 
 
@@ -70,11 +68,12 @@ int main(void)
 	configureDAC();
 	HAL_DAC_Start(&hDAC1, DAC_CHANNEL_1);
 	configureADC();
+	
+	//Enable ADC interrupt
 	HAL_NVIC_SetPriority(ADC_IRQn, 0, 0);
 	HAL_NVIC_EnableIRQ(ADC_IRQn);
 
 	Init_timer_HAL();
-
 
 	while(1){
 
@@ -103,7 +102,7 @@ void Init_timer_HAL(){
 }
 
 void TIM6_DAC_IRQHandler(){
-	TIM6->SR &= 0xFFFFFFFE;
+	TIM6->SR &= 0xFFFFFFFE;//Clear the interrupt flag of TIM6
 
 	if(adc_state==0){
 		adc_state=1;
@@ -117,10 +116,10 @@ void TIM6_DAC_IRQHandler(){
 
 void configureDAC(){
 	__HAL_RCC_DAC_CLK_ENABLE();
-
+       //Configure DAC_HandleTypeDef
 	hDAC1.Instance = DAC;
 	HAL_DAC_Init(&hDAC1);
-
+	//Configure DAC_ChannelConfTypeDef
 	DAC_ChannelConfTypeDef dacchan;
 	dacchan.DAC_Trigger = DAC_TRIGGER_NONE;
 	dacchan.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
@@ -170,7 +169,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 void configureADC()
 {  //A3 =>PF10 (ADC3_IN8)
 	__HAL_RCC_ADC3_CLK_ENABLE();
-
+	//Configure ADC_HandleTypeDef
 	hADC3.Instance = ADC3;
 	hADC3.Init.Resolution = ADC_RESOLUTION_12B;
 	hADC3.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV8;
@@ -184,7 +183,7 @@ void configureADC()
 	hADC3.Init.ExternalTrigConv = ADC_SOFTWARE_START;
 	HAL_ADC_Init(&hADC3);
 
-	//ADC->CCR |= ADC_CCR_TSVREFE;
+	//Configure ADC_ChannelConfTypeDef
 	ADC_ChannelConfTypeDef adcchan3;
 	adcchan3.Channel = ADC_CHANNEL_8;
 	adcchan3.Rank = ADC_REGULAR_RANK_1;
@@ -192,7 +191,7 @@ void configureADC()
 	HAL_ADC_ConfigChannel(&hADC3,&adcchan3);
 
 	__HAL_RCC_ADC1_CLK_ENABLE();
-
+	//Configure ADC_HandleTypeDef
 	hADC1.Instance = ADC1;
 	hADC1.Init.Resolution = ADC_RESOLUTION_12B;
 	hADC1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV8;
@@ -206,7 +205,7 @@ void configureADC()
 	hADC1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
 	HAL_ADC_Init(&hADC1);
 
-	//ADC->CCR |= ADC_CCR_TSVREFE;
+	//Configure ADC_ChannelConfTypeDef
 	ADC_ChannelConfTypeDef adcchan1;
 	adcchan1.Channel = ADC_CHANNEL_12;
 	adcchan1.Rank = ADC_REGULAR_RANK_1;
